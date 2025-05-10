@@ -135,6 +135,29 @@ def mark_booking_as_paid(db: Session, booking_id: int):
         raise HTTPException(status_code=404, detail="Booking not found")
     
     booking.payment_status = "paid"
+
+    # 2. Calculate duration in minutes
+    try:
+        slot_start_dt = datetime.combine(date.today(), booking.slot_start)
+        slot_end_dt = datetime.combine(date.today(), booking.slot_end)
+        duration_minutes = int((slot_end_dt - slot_start_dt).total_seconds() // 60)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Invalid slot time format: {e}")
+    
+    try:
+        # 3. Fetch all customer_ids from group_members of this booking
+        group_members = db.query(GroupMember).filter(GroupMember.booking_id == booking_id).all()
+        customer_ids = {member.customer_id for member in group_members if member.customer_id is not None}
+
+        # 4. Update swimming_minutes in customer table
+        for customer_id in customer_ids:
+            customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
+            if customer:
+                customer.swimming_minutes = (customer.swimming_minutes or 0) + duration_minutes
+    except Exception as e:
+        raise Exception(detail=f"{e}")
+
+
     db.commit()
     db.refresh(booking)
     return booking
