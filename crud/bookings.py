@@ -90,6 +90,7 @@ def create_booking_with_members(db, user_id: int, members_data: List[GroupMember
         band_color = final_band_color,
         deleted = False
     )
+    
     db.add(new_booking)
     db.commit()
     db.refresh(new_booking)
@@ -148,6 +149,7 @@ def mark_booking_as_paid(db: Session, booking_id: int):
         # 3. Fetch all customer_ids from group_members of this booking
         group_members = db.query(GroupMember).filter(GroupMember.booking_id == booking_id).all()
         customer_ids = {member.customer_id for member in group_members if member.customer_id is not None}
+        customer_ids = list(set(customer_ids))
 
         # 4. Update swimming_minutes in customer table
         for customer_id in customer_ids:

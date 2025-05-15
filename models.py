@@ -53,8 +53,8 @@ class GroupMember(Base):
     booking_id = Column(Integer, ForeignKey("bookings.booking_id", ondelete="CASCADE"))
     full_name = Column(String(100), nullable=False)
     customer_id = Column(Integer, ForeignKey("customers.customer_id"), nullable=True)
-    age = Column(Integer)
-    gender = Column(String(10))
+    age = Column(Integer,nullable=True,default=0)
+    gender = Column(String(10),nullable=True)
 
     needs_swimwear = Column(Boolean, default=False)
     swimwear_type = Column(String(20))

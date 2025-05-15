@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 
-from schemas.bookings import BookingCreate, BookingOut, CustomerbookingOut
+from schemas.bookings import BookingCreate, BookingOut, CustomerbookingOut, AdminBookingCreate
 from schemas.group_members import GroupMemberCreate
 
 from crud.bookings import create_booking, get_booking, get_all_bookings, create_booking_with_members, mark_booking_as_paid, cancel_booking

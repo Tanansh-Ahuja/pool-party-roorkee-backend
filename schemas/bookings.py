@@ -16,6 +16,18 @@ class BookingBase(BaseModel):
     payment_status: Optional[str] = "pending"
     band_color: Optional[str] = None
 
+class AdminBookingCreate(BaseModel):
+    customer_id: Optional[int] = None
+    booking_time: Optional[datetime]
+    booking_date: date
+    slot_start: time
+    slot_end: time
+    number_of_people: int
+    food_order: Optional[TextStr] = None
+    total_amount: float
+    payment_status: Optional[str] = "pending"
+    band_color: Optional[str] = None
+    
 class BookingCreate(BookingBase):
     pass
 
