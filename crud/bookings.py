@@ -113,6 +113,9 @@ def get_all_bookings(db: Session):
 def get_bookings_for_date(db: Session, booking_date: date):
     return db.query(Booking).filter(Booking.booking_date == booking_date, Booking.deleted == False).all()
 
+def get_coming_bookings(db: Session):
+    return db.query(Booking).filter(Booking.booking_date > date.today(), Booking.deleted == False).all()
+
 def update_booking(db: Session, booking_id: int, updated_data: BookingCreate):
     db_booking = db.query(Booking).filter(Booking.booking_id == booking_id).first()
     if db_booking:

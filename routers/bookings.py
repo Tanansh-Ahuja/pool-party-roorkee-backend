@@ -9,7 +9,7 @@ from schemas.bookings import BookingCreate, BookingOut, CustomerbookingOut, Admi
 from schemas.group_members import GroupMemberCreate
 
 from crud.bookings import create_booking, get_booking, get_all_bookings, create_booking_with_members, mark_booking_as_paid, cancel_booking
-from crud.bookings import update_booking, delete_booking, get_bookings_for_date, get_all_bookings_of_customer,get_revenue_for_date
+from crud.bookings import update_booking, delete_booking, get_bookings_for_date, get_all_bookings_of_customer,get_revenue_for_date, get_coming_bookings
 import crud.settings as crud_settings
 
 from utils.auth import get_current_user
@@ -59,6 +59,10 @@ def cancel(booking_id: int, db: Session = Depends(get_db)):
 @router.get("/by-date/{booking_date}", response_model=list[BookingOut])
 def get_bookings_by_date(booking_date: date, db: Session = Depends(get_db)):
     return get_bookings_for_date(db, booking_date)
+
+@router.get("/upcoming", response_model=list[BookingOut])
+def get_upcoming_bookings(db: Session = Depends(get_db)):
+    return get_coming_bookings(db)
 
 @router.get("/{booking_id}", response_model=BookingOut)
 def read_booking(booking_id: int, db: Session = Depends(get_db)):
