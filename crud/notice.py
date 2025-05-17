@@ -34,12 +34,12 @@ def update_one_notice(notice_id: int, notice_update: NoticeUpdate, db: Session =
         "content": db_notice.content
     }}
 
-def delete_notice(db: Session, notice_id: int):
-    db_notice = db.query(Notice).filter(Notice.id == notice_id).first()
-
-    if db_notice:
-        db.delete(db_notice)
-        db.commit()
-        # Return the Pydantic model for response serialization
-        return NoticeOut.model_dump(db_notice)
-    return None
+def delete_notice_by_id(notice_id: int, db: Session):
+    notice = db.query(Notice).filter(Notice.id == notice_id).first()
+    if not notice:
+        raise HTTPException(status_code=404, detail="Notice not found")
+    
+    db.delete(notice)
+    db.commit()
+    return {"detail": f"Notice {notice_id} deleted successfully"}
+        

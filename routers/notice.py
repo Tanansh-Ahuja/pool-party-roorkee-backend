@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from schemas.notices import NoticeCreate, NoticeOut, NoticeUpdate
-from crud.notice import create_one_notice, get_notices ,delete_notice, update_one_notice
+from crud.notice import create_one_notice, get_notices ,delete_notice_by_id, update_one_notice
 from database import get_db
 from models import Notice
 
@@ -22,11 +22,6 @@ def update_notice(notice_id: int, notice_update: NoticeUpdate, db: Session = Dep
     return update_one_notice(notice_id,notice_update,db)
     
 
-@router.delete("/{notice_id}", response_model=NoticeOut)
-def delete_notice_route(notice_id: int, db: Session = Depends(get_db)):
-    db_notice = delete_notice(db, notice_id)
-    
-    if not db_notice:
-        raise HTTPException(status_code=404, detail="Notice not found")
-    
-    return db_notice
+@router.delete("/{notice_id}")
+def delete_notice(notice_id: int, db: Session = Depends(get_db)):
+    return delete_notice_by_id(notice_id, db)
