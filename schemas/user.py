@@ -6,23 +6,22 @@ from datetime import datetime
 PhoneStr = Annotated[str, StringConstraints(min_length=10, max_length=15)]
 
 class UserCreate(BaseModel):
-    username: str
-    email: EmailStr
+    full_name: str
+    phone_number: str  # Keep simple str if not using PhoneStr validator
     password: str
     role: str  # "admin" or "customer"
 
-     # Customer-specific fields
-    full_name: str
-    phone_number: PhoneStr
+    # Optional fields
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
     gender: Optional[str] = None
     age: Optional[int] = None
-    swimming_minutes: Optional[int] = None
     notes: Optional[str] = None
 
 class UserOut(BaseModel):
     user_id: int
-    username: str
-    email: EmailStr
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
     role: str
     created_at: datetime
 
@@ -30,5 +29,6 @@ class UserOut(BaseModel):
         from_attributes = True
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
     password: str

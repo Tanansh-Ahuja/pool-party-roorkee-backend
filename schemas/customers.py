@@ -42,8 +42,8 @@ class CustomerProfileOut(BaseModel):
     age: Optional[int]
     swimming_minutes: Optional[int]
     registered_at: datetime
-    username: str
-    email: str
+    username: Optional[str]
+    email: Optional[str]
     role: str
 
     class Config:

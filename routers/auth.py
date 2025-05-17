@@ -10,10 +10,15 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/signup", response_model=UserOut)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == user.email).first():
+    # Email uniqueness check (if provided)
+    if user.email and db.query(User).filter(User.email == user.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
-    if db.query(User).filter(User.username == user.username).first():
+    
+    # Username uniqueness check (if provided)
+    if user.username and db.query(User).filter(User.username == user.username).first():
         raise HTTPException(status_code=400, detail="Username already taken")
+
+    # Mobile number is required — always check
     if db.query(Customer).filter(Customer.phone_number == user.phone_number).first():
         raise HTTPException(status_code=400, detail="Mobile number already taken")
 
@@ -28,16 +33,15 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    # If it's a customer, add to customers table as well
     if user.role.lower() == "customer":
         customer = Customer(
             full_name=user.full_name,
             phone_number=user.phone_number,
             gender=user.gender,
             age=user.age,
-            swimming_minutes = 0,
+            swimming_minutes=0,
             notes=user.notes,
-            user_id = new_user.user_id
+            user_id=new_user.user_id
         )
         db.add(customer)
         db.commit()
@@ -47,15 +51,31 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if not user:
+    db_user = None
+
+    # Try login by email
+    if user.email:
+        db_user = db.query(User).filter(User.email == user.email).first()
+    
+    # Try login by phone number (go through customers table)
+    elif user.phone_number:
+        customer = db.query(Customer).filter(Customer.phone_number == user.phone_number).first()
+        if customer:
+            db_user = db.query(User).filter(User.user_id == customer.user_id).first()
+    
+    if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Check if the password matches
+    # Check password
     if not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect password")
-    
+
     # Generate the JWT token
-    user_data = {"sub": db_user.email, "id": db_user.user_id, "role": db_user.role}  # sub = subject (user)
+    user_data = {
+        "sub": db_user.email or str(db_user.user_id),  # fallback if no email
+        "id": db_user.user_id,
+        "role": db_user.role
+    }
     access_token = create_access_token(user_data)
+    
     return access_token

@@ -126,8 +126,8 @@ class Notice(Base):
 class User(Base):
     __tablename__ = "users"
     user_id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(100), nullable=False)
-    email = Column(String(255), unique=True, nullable=False)
+    username = Column(String(100), nullable=True)
+    email = Column(String(255), unique=True, nullable=True)
     hashed_password = Column(Text, nullable=False)
     role = Column(String(20), nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
