@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException
 from scipy import stats
 from sqlalchemy.orm import Session
 from models import Customer, User
-from schemas.customers import CustomerCreate, CustomerUpdate
+from schemas.customers import CustomerCreate, CustomerUserUpdate
 from utils.auth import get_current_user
 
 def create_customer(db: Session, customer: CustomerCreate):
@@ -55,13 +55,25 @@ def delete_customer(db: Session, customer_id: int):
         db.commit()
     return {"message": "Customer deleted"}
 
-def update_customer_by_user_id(db: Session, user_id: int, updated_data: CustomerUpdate):
+def update_customer_and_user_by_user_id(db: Session, user_id: int, updated_data: CustomerUserUpdate):
     customer = db.query(Customer).filter(Customer.user_id == user_id).first()
-    if not customer:
+    user = db.query(User).filter(User.user_id == user_id).first()
+
+    if not customer or not user:
         return None
 
-    for key, value in updated_data.model_dump(exclude_unset=True).items():
-        setattr(customer, key, value)
+    update_dict = updated_data.model_dump(exclude_unset=True)
+    
+    # Separate and update user fields
+    user_fields = ["username", "email"]
+    for field in user_fields:
+        if field in update_dict:
+            setattr(user, field, update_dict[field])
+
+    # Update customer fields
+    for field in update_dict:
+        if field not in user_fields:
+            setattr(customer, field, update_dict[field])
 
     db.commit()
     db.refresh(customer)

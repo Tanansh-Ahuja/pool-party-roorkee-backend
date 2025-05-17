@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from database import get_db
-from schemas.customers import CustomerCreate, CustomerOut, CustomerUpdate, CustomerProfileOut
-from crud.customers import update_customer_by_user_id, create_customer, get_customer_by_customer_id, get_all_customers, update_customer, delete_customer, get_me
+from schemas.customers import CustomerCreate, CustomerOut, CustomerUserUpdate, CustomerProfileOut
+from crud.customers import update_customer_and_user_by_user_id, create_customer, get_customer_by_customer_id, get_all_customers, update_customer, delete_customer, get_me
 from utils.auth import get_current_user
 from models import User
 
@@ -21,16 +21,18 @@ def get_my_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+   
     return get_me(db,current_user)
     
 
 @router.put("/UpdateMe", response_model=CustomerOut)
 def update_my_customer_profile(
-    updated_info: CustomerUpdate,
+    updated_info: CustomerUserUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    updated_customer = update_customer_by_user_id(db, current_user.user_id, updated_info)
+   
+    updated_customer = update_customer_and_user_by_user_id(db, current_user.user_id, updated_info)
     if not updated_customer:
         raise HTTPException(status_code=404, detail="Customer not found")
     return updated_customer

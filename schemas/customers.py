@@ -1,4 +1,4 @@
-from pydantic import BaseModel, StringConstraints
+from pydantic import BaseModel, EmailStr, StringConstraints
 from typing import Optional, Annotated
 from datetime import datetime
 
@@ -15,13 +15,16 @@ class CustomerBase(BaseModel):
 class CustomerCreate(CustomerBase):
     pass
 
-class CustomerUpdate(BaseModel):
-    full_name: Optional[str]= None
-    phone_number: Optional[PhoneStr]= None
+class CustomerUserUpdate(BaseModel):
+    # User fields
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+    # Customer fields
+    full_name: Optional[str] = None
+    phone_number: Optional[str] = None
     gender: Optional[str] = None
-    age: Optional[int]= None
-    notes: Optional[str]= None
-    swimmingminutes: Optional[int]= None
+    age: Optional[int] = None
 
     class Config:
         from_attributes = True
