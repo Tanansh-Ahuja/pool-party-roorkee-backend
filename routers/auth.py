@@ -79,3 +79,26 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     access_token = create_access_token(user_data)
     
     return access_token
+
+@router.post("/reset-password")
+def reset_password(data: dict, db: Session = Depends(get_db)):
+    identifier = data.get("identifier")
+    new_password = data.get("new_password")
+
+    if not identifier or not new_password:
+        raise HTTPException(status_code=400, detail="Missing identifier or new password")
+
+    # Check if identifier is an email or mobile number
+    user = db.query(User).filter(User.email == identifier).first()
+    if not user:
+        customer = db.query(Customer).filter(Customer.phone_number == identifier).first()
+        if customer:
+            user = db.query(User).filter(User.user_id == customer.user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Update password
+    user.hashed_password = hash_password(new_password)
+    db.commit()
+    return {"message": "Password updated successfully"}
