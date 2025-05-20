@@ -5,7 +5,6 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from models import Booking, GroupMember, Customer
-from schemas.bookings import BookingCreate
 from schemas.group_members import GroupMemberCreate
 from utils.get_customer_id_from_user import get_customer_id_from_user_id
 from crud.group_members import create_group_members
@@ -97,16 +96,6 @@ def create_booking_with_members(db, user_id: int, members_data: List[GroupMember
     create_group_members(db, members_data,new_booking,amount_per_person)
     return new_booking
 
-def create_booking(db: Session, booking: BookingCreate):
-    db_booking = Booking(**booking.model_dump())
-    db.add(db_booking)
-    db.commit()
-    db.refresh(db_booking)
-    return db_booking
-
-def get_booking(db: Session, booking_id: int):
-    return db.query(Booking).filter(Booking.booking_id == booking_id).first()
-
 def get_all_bookings(db: Session):
     return db.query(Booking).all()
 
@@ -116,22 +105,12 @@ def get_bookings_for_date(db: Session, booking_date: date):
 def get_coming_bookings(db: Session):
     return db.query(Booking).filter(Booking.booking_date > date.today(), Booking.deleted == False).all()
 
-def update_booking(db: Session, booking_id: int, updated_data: BookingCreate):
-    db_booking = db.query(Booking).filter(Booking.booking_id == booking_id).first()
-    if db_booking:
-        for key, value in updated_data.model_dump().items():
-            setattr(db_booking, key, value)
-        db.commit()
-        db.refresh(db_booking)
-    return db_booking
-
 def delete_booking(db: Session, booking_id: int):
     db_booking = db.query(Booking).filter(Booking.booking_id == booking_id).first()
     if db_booking:
         db.delete(db_booking)
         db.commit()
     return {"message": "Booking deleted"}
-
 
 def mark_booking_as_paid(db: Session, booking_id: int):
     booking = db.query(Booking).filter(Booking.booking_id == booking_id).first()

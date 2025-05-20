@@ -5,11 +5,11 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 
-from schemas.bookings import BookingCreate, BookingOut, CustomerbookingOut, AdminBookingCreate
+from schemas.bookings import BookingOut, CustomerbookingOut
 from schemas.group_members import GroupMemberCreate
 
-from crud.bookings import create_booking, get_booking, get_all_bookings, create_booking_with_members, mark_booking_as_paid, cancel_booking
-from crud.bookings import update_booking, delete_booking, get_bookings_for_date, get_all_bookings_of_customer,get_revenue_for_date, get_coming_bookings
+from crud.bookings import get_all_bookings, create_booking_with_members, mark_booking_as_paid, cancel_booking
+from crud.bookings import get_bookings_for_date, get_all_bookings_of_customer,get_revenue_for_date, get_coming_bookings
 import crud.settings as crud_settings
 
 from utils.auth import get_current_user
@@ -17,11 +17,6 @@ from models import User
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
-@router.post("/", response_model=BookingOut)
-def create_booking_route(booking: BookingCreate, db: Session = Depends(get_db)):
-    if not crud_settings.is_booking_enabled(db):
-        raise HTTPException(status_code=403, detail="Online bookings are currently disabled.")
-    return create_booking(db, booking)
 
 @router.post("/CustomerCreateBooking", response_model=BookingOut)
 def create_booking_route(
@@ -64,17 +59,3 @@ def get_bookings_by_date(booking_date: date, db: Session = Depends(get_db)):
 def get_upcoming_bookings(db: Session = Depends(get_db)):
     return get_coming_bookings(db)
 
-@router.get("/{booking_id}", response_model=BookingOut)
-def read_booking(booking_id: int, db: Session = Depends(get_db)):
-    db_booking = get_booking(db, booking_id)
-    if not db_booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
-    return db_booking
-
-@router.put("/{booking_id}", response_model=BookingOut)
-def update_booking_route(booking_id: int, booking: BookingCreate, db: Session = Depends(get_db)):
-    return update_booking(db, booking_id, booking)
-
-@router.delete("/{booking_id}")
-def delete_booking_route(booking_id: int, db: Session = Depends(get_db)):
-    return delete_booking(db, booking_id)
