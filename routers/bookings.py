@@ -40,12 +40,12 @@ def get_customer_bookings(current_user: User = Depends(get_current_user),db: Ses
 
 @router.get("/unpaid", response_model=List[UnpaidBookingOut])
 def get_unpaid_bookings(db: Session = Depends(get_db)):
-    return get_bookings_today_unpaid(db,"2025-05-21")
-#date.today()
+    return get_bookings_today_unpaid(db,date.today())
+
 
 @router.get("/overstayed", response_model=list[OverstayedBookingOut])
 def overstayed_bookings(db: Session = Depends(get_db)):
-    return get_overstayed_bookings(db, "2025-05-21")
+    return get_overstayed_bookings(db,date.today())
 
 @router.get("/revenue/{booking_date}")
 def get_daily_revenue(booking_date: date, db: Session = Depends(get_db)):
