@@ -99,6 +99,30 @@ def create_booking_with_members(db, user_id: int, members_data: List[GroupMember
 def get_all_bookings(db: Session):
     return db.query(Booking).all()
 
+def get_overstayed_bookings(db: Session, booking_date: date):
+    now = datetime.now().time()
+
+    bookings = db.query(Booking).filter(
+        Booking.booking_date == booking_date,
+        Booking.slot_end < now,
+        Booking.payment_status == "paid",
+        Booking.in_pool == True,
+        Booking.deleted == False
+    ).all()
+
+    result = []
+    for booking in bookings:
+        customer = db.query(Customer).filter(Customer.customer_id == booking.customer_id).first()
+        result.append({
+            "booking_id": booking.booking_id,
+            "booking_date": booking.booking_date,
+            "slot_start": booking.slot_start,
+            "slot_end": booking.slot_end,
+            "customer_name": customer.full_name if customer else "Unknown"
+        })
+
+    return result
+
 def get_bookings_for_date(db: Session, booking_date: date):
     return db.query(Booking).filter(Booking.booking_date == booking_date, Booking.deleted == False).all()
 
@@ -139,6 +163,7 @@ def mark_booking_as_paid(db: Session, booking_id: int):
         raise HTTPException(status_code=404, detail="Booking not found")
     
     booking.payment_status = "paid"
+    booking.in_pool = True
 
     # 2. Calculate duration in minutes
     try:

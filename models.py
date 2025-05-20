@@ -33,6 +33,7 @@ class Booking(Base):
     slot_start = Column(Time, nullable=False)
     slot_end = Column(Time, nullable=False)
     number_of_people = Column(Integer, nullable=False)
+    in_pool = Column(Boolean, default=False)
     food_order = Column(Text)
     total_amount = Column(Numeric(10, 2), nullable=False)
     payment_status = Column(String(20), default="pending")

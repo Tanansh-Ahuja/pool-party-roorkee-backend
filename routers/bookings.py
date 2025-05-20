@@ -5,11 +5,11 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 
-from schemas.bookings import BookingOut, CustomerbookingOut, UnpaidBookingOut
+from schemas.bookings import BookingOut, CustomerbookingOut, UnpaidBookingOut, OverstayedBookingOut
 from schemas.group_members import GroupMemberCreate
 
 from crud.bookings import get_all_bookings, create_booking_with_members, mark_booking_as_paid, cancel_booking, get_bookings_today_unpaid
-from crud.bookings import get_bookings_for_date, get_all_bookings_of_customer,get_revenue_for_date, get_coming_bookings
+from crud.bookings import get_bookings_for_date, get_all_bookings_of_customer,get_revenue_for_date, get_coming_bookings, get_overstayed_bookings
 import crud.settings as crud_settings
 
 from utils.auth import get_current_user
@@ -40,7 +40,12 @@ def get_customer_bookings(current_user: User = Depends(get_current_user),db: Ses
 
 @router.get("/unpaid", response_model=List[UnpaidBookingOut])
 def get_unpaid_bookings(db: Session = Depends(get_db)):
-    return get_bookings_today_unpaid(db,date.today())
+    return get_bookings_today_unpaid(db,"2025-05-21")
+#date.today()
+
+@router.get("/overstayed", response_model=list[OverstayedBookingOut])
+def overstayed_bookings(db: Session = Depends(get_db)):
+    return get_overstayed_bookings(db, "2025-05-21")
 
 @router.get("/revenue/{booking_date}")
 def get_daily_revenue(booking_date: date, db: Session = Depends(get_db)):

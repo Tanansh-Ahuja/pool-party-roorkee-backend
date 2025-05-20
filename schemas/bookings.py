@@ -42,7 +42,16 @@ class UnpaidBookingOut(BaseModel):
     class Config:
         from_attributes = True
 
+class OverstayedBookingOut(BaseModel):
+    booking_id: int
+    booking_date: date
+    slot_start: time
+    slot_end: time
+    customer_name: str
 
+    class Config:
+        from_attributes = True
+        
 class BookingOut(BookingBase):
     booking_id: int
     booking_time: Optional[datetime]
