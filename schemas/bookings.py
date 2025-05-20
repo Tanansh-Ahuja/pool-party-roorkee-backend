@@ -31,9 +31,22 @@ class BookingUpdate(BaseModel):
     band_color: Optional[str]
     deleted: Optional[bool]
 
+class UnpaidBookingOut(BaseModel):
+    booking_id: int
+    booking_date: Optional[date]=None
+    slot_start: Optional[time]=None
+    slot_end: Optional[time]=None
+    total_amount: Optional[float]=None
+    customer_name: Optional[str]=None
+
+    class Config:
+        from_attributes = True
+
+
 class BookingOut(BookingBase):
     booking_id: int
     booking_time: Optional[datetime]
+    customer_name: Optional[str] = None
     deleted: bool
 
     class Config:

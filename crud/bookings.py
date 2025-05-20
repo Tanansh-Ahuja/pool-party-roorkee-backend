@@ -102,6 +102,27 @@ def get_all_bookings(db: Session):
 def get_bookings_for_date(db: Session, booking_date: date):
     return db.query(Booking).filter(Booking.booking_date == booking_date, Booking.deleted == False).all()
 
+def get_bookings_today_unpaid(db: Session, booking_date: date):
+    results = (
+        db.query(
+            Booking.booking_id,
+            Booking.booking_date,
+            Booking.slot_start,
+            Booking.slot_end,
+            Booking.total_amount,
+            Customer.full_name.label("customer_name")
+        )
+        .join(Customer, Booking.customer_id == Customer.customer_id)
+        .filter(
+            Booking.booking_date == booking_date,
+            Booking.deleted == False,
+            Booking.payment_status == "pending"
+        )
+        .all())
+    print(results)
+    return results
+
+
 def get_coming_bookings(db: Session):
     return db.query(Booking).filter(Booking.booking_date > date.today(), Booking.deleted == False).all()
 

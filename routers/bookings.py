@@ -5,10 +5,10 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 
-from schemas.bookings import BookingOut, CustomerbookingOut
+from schemas.bookings import BookingOut, CustomerbookingOut, UnpaidBookingOut
 from schemas.group_members import GroupMemberCreate
 
-from crud.bookings import get_all_bookings, create_booking_with_members, mark_booking_as_paid, cancel_booking
+from crud.bookings import get_all_bookings, create_booking_with_members, mark_booking_as_paid, cancel_booking, get_bookings_today_unpaid
 from crud.bookings import get_bookings_for_date, get_all_bookings_of_customer,get_revenue_for_date, get_coming_bookings
 import crud.settings as crud_settings
 
@@ -37,6 +37,10 @@ def read_all_bookings(db: Session = Depends(get_db)):
 @router.get("/customer/me", response_model=List[CustomerbookingOut])
 def get_customer_bookings(current_user: User = Depends(get_current_user),db: Session = Depends(get_db),skip: int = 0,limit: int = 10):
     return get_all_bookings_of_customer(current_user.user_id,db,skip,limit)
+
+@router.get("/unpaid", response_model=List[UnpaidBookingOut])
+def get_unpaid_bookings(db: Session = Depends(get_db)):
+    return get_bookings_today_unpaid(db,date.today())
 
 @router.get("/revenue/{booking_date}")
 def get_daily_revenue(booking_date: date, db: Session = Depends(get_db)):
