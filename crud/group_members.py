@@ -65,7 +65,6 @@ def create_group_member(db: Session, member: GroupMemberCreate):
     return db_member
 
 def get_group_members_by_group_id(db: Session, group_id: str):
-    print("Get group member by group id")
     return db.query(GroupMember).filter(GroupMember.group_id == group_id).all()
 
 def get_group_member(db: Session, group_id: str, member_id: int):
@@ -92,7 +91,6 @@ def delete_group_member(db: Session, group_id: str, member_id: int):
     return False
 
 def get_all_groups_with_members(db: Session):
-    print("In Get All group with members")
     members = db.query(GroupMember).all()
     grouped = defaultdict(list)
 

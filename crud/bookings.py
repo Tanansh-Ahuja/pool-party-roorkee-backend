@@ -143,7 +143,6 @@ def get_bookings_today_unpaid(db: Session, booking_date: date):
             Booking.payment_status == "pending"
         )
         .all())
-    print(results)
     return results
 
 

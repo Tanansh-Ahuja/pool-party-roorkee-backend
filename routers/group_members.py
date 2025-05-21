@@ -13,12 +13,10 @@ def add_group_member(member: GroupMemberCreate, db: Session = Depends(get_db)):
 
 @router.get("/all-groups", response_model=List[GroupWithMembers])
 def get_all_groups(db: Session = Depends(get_db)):
-    print("Router: All groups")
     return crud.get_all_groups_with_members(db)
 
 @router.get("/{group_id}", response_model=list[GroupMemberOut])
 def get_group_by_id(group_id: str, db: Session = Depends(get_db)):
-    print("Router Get group by id")
     return crud.get_group_members_by_group_id(db, group_id)
 
 @router.get("/{group_id}/{member_id}", response_model=GroupMemberOut)
