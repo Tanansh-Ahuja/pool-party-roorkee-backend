@@ -4,10 +4,49 @@ from typing import List
 from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from models import Booking, GroupMember, Customer
+from models import Booking, GroupMember, Customer, Payment
 from schemas.group_members import GroupMemberCreate
 from utils.get_customer_id_from_user import get_customer_id_from_user_id
 from crud.group_members import create_group_members
+from crud.payments import create_payment
+
+def _updating_swimming_minutes_for_booking(db,booking,booking_id):
+    # 2. Calculate duration in minutes
+    try:
+        slot_start_dt = datetime.combine(date.today(), booking.slot_start)
+        slot_end_dt = datetime.combine(date.today(), booking.slot_end)
+        duration_minutes = int((slot_end_dt - slot_start_dt).total_seconds() // 60)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Invalid slot time format: {e}")
+    
+    try:
+        # 3. Fetch all customer_ids from group_members of this booking
+        group_members = db.query(GroupMember).filter(GroupMember.booking_id == booking_id).all()
+        customer_ids = {member.customer_id for member in group_members if member.customer_id is not None}
+        customer_ids = list(set(customer_ids))
+
+        # 4. Update swimming_minutes in customer table
+        for customer_id in customer_ids:
+            customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
+            if customer:
+                customer.swimming_minutes = (customer.swimming_minutes or 0) + duration_minutes
+    except Exception as e:
+        raise Exception(detail=f"{e}")
+    db.commit()
+
+def _marking_payment_row_of_booking_as_paid(db,booking_id):
+    # Fetch corresponding payment
+    payment = db.query(Payment).filter(Payment.booking_id == booking_id, Payment.is_deleted == False).first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Associated payment not found")
+
+    # Update payment fields
+    payment.payment_status = "completed"
+    payment.payment_method = "cash"
+    payment.payment_date = datetime.now()  # override in case payment was generated earlier
+
+    db.commit()
+    db.refresh(payment)
 
 def get_all_bookings_of_customer(user_id: int, db, skip: int = 0, limit: int = 10):
     # Step 1: Get customer_id from user_id
@@ -93,7 +132,11 @@ def create_booking_with_members(db, user_id: int, members_data: List[GroupMember
     db.add(new_booking)
     db.commit()
     db.refresh(new_booking)
-    create_group_members(db, members_data,new_booking,amount_per_person)
+    # After creating the booking
+    rental_total = create_group_members(db, members_data, new_booking, amount_per_person)
+    # Swimming and rental totals
+    swimming_amount = len(members_data) * amount_per_person
+    create_payment(db,rental_total,swimming_amount,new_booking)
     return new_booking
 
 def get_all_bookings(db: Session):
@@ -163,30 +206,17 @@ def mark_booking_as_paid(db: Session, booking_id: int):
     
     booking.payment_status = "paid"
     booking.in_pool = True
+    _marking_payment_row_of_booking_as_paid(db,booking_id)
+    _updating_swimming_minutes_for_booking(db,booking,booking_id)
+    db.commit()
+    db.refresh(booking)
+    return booking
 
-    # 2. Calculate duration in minutes
-    try:
-        slot_start_dt = datetime.combine(date.today(), booking.slot_start)
-        slot_end_dt = datetime.combine(date.today(), booking.slot_end)
-        duration_minutes = int((slot_end_dt - slot_start_dt).total_seconds() // 60)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Invalid slot time format: {e}")
-    
-    try:
-        # 3. Fetch all customer_ids from group_members of this booking
-        group_members = db.query(GroupMember).filter(GroupMember.booking_id == booking_id).all()
-        customer_ids = {member.customer_id for member in group_members if member.customer_id is not None}
-        customer_ids = list(set(customer_ids))
-
-        # 4. Update swimming_minutes in customer table
-        for customer_id in customer_ids:
-            customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
-            if customer:
-                customer.swimming_minutes = (customer.swimming_minutes or 0) + duration_minutes
-    except Exception as e:
-        raise Exception(detail=f"{e}")
-
-
+def mark_as_out_of_pool(db: Session, booking_id: int):
+    booking = db.query(Booking).filter(Booking.booking_id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    booking.in_pool = False
     db.commit()
     db.refresh(booking)
     return booking
@@ -197,8 +227,24 @@ def cancel_booking(db: Session, booking_id: int):
         raise HTTPException(status_code=404, detail="Booking not found")
     
     booking.deleted = True
+
+    # Fetch corresponding payment
+    payment = db.query(Payment).filter(Payment.booking_id == booking_id, Payment.is_deleted == False).first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Associated payment not found")
+
+    # Update payment fields
+    payment.is_deleted = True
+    payment.payment_date = datetime.now()  # override in case payment was generated earlier
+
+    # Hard-delete all group members related to this booking
+    group_members = db.query(GroupMember).filter(GroupMember.booking_id == booking_id).all()
+    for member in group_members:
+        db.delete(member)
+    
     db.commit()
     db.refresh(booking)
+    db.refresh(payment)
     return booking
 
 def get_revenue_for_date(db: Session, target_date: date):

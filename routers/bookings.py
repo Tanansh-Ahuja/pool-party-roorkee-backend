@@ -8,7 +8,7 @@ from database import get_db
 from schemas.bookings import BookingOut, CustomerbookingOut, UnpaidBookingOut, OverstayedBookingOut
 from schemas.group_members import GroupMemberCreate
 
-from crud.bookings import get_all_bookings, create_booking_with_members, mark_booking_as_paid, cancel_booking, get_bookings_today_unpaid
+from crud.bookings import get_all_bookings, create_booking_with_members, mark_booking_as_paid, cancel_booking, get_bookings_today_unpaid,mark_as_out_of_pool
 from crud.bookings import get_bookings_for_date, get_all_bookings_of_customer,get_revenue_for_date, get_coming_bookings, get_overstayed_bookings
 import crud.settings as crud_settings
 
@@ -54,6 +54,10 @@ def get_daily_revenue(booking_date: date, db: Session = Depends(get_db)):
 @router.patch("/mark-paid/{booking_id}", response_model=BookingOut)
 def mark_paid(booking_id: int, db: Session = Depends(get_db)):
     return mark_booking_as_paid(db, booking_id)
+
+@router.patch("/mark-out-of-pool/{booking_id}", response_model=BookingOut)
+def mark_paid(booking_id: int, db: Session = Depends(get_db)):
+    return mark_as_out_of_pool(db, booking_id)
 
 @router.patch("/cancel/{booking_id}", response_model=BookingOut)
 def cancel(booking_id: int, db: Session = Depends(get_db)):

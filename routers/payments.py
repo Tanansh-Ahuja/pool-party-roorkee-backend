@@ -14,6 +14,10 @@ def create_payment(payment: PaymentCreate, db: Session = Depends(get_db)):
 def get_payments(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return payments.get_payments(db=db, skip=skip, limit=limit)
 
+@router.get("/revenue-chart")
+def revenue_chart(db: Session = Depends(get_db)):
+    return payments.get_daily_revenue_data(db)
+
 @router.get("/{payment_id}", response_model=PaymentOut)
 def get_payment(payment_id: int, db: Session = Depends(get_db)):
     return payments.get_payment_by_id(db=db, payment_id=payment_id)

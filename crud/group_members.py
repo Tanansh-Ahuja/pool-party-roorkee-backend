@@ -1,14 +1,16 @@
 from collections import defaultdict
 from typing import List
 from sqlalchemy.orm import Session
-from models import GroupMember
+from models import GroupMember,Payment
 from schemas.group_members import GroupMemberCreate, GroupMemberUpdate, GroupMemberOut
 from schemas.bookings import BookingCreate
 
 
 def create_group_members(db: Session , members_data: List[GroupMemberCreate],new_booking: BookingCreate,amount_per_person: int):
     member_id_number = 0
+    total_rental_cost = 0
     # Add all group members
+
     for member in members_data:
         member_id_number+=1
         swimwear_amount = 0
@@ -30,6 +32,9 @@ def create_group_members(db: Session , members_data: List[GroupMemberCreate],new
             cap_amount += 20
         if member.needs_goggles:
             goggles_amount += 20
+
+        # Add to total rental cost
+        total_rental_cost += swimwear_amount + tube_amount + cap_amount + goggles_amount
 
         group_member = GroupMember(
             member_id = member_id_number,
@@ -56,6 +61,7 @@ def create_group_members(db: Session , members_data: List[GroupMemberCreate],new
         db.add(group_member)
         db.commit()
         db.refresh(group_member)
+    return total_rental_cost
 
 def create_group_member(db: Session, member: GroupMemberCreate):
     db_member = GroupMember(**member.model_dump())
