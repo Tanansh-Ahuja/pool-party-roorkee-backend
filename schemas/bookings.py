@@ -55,8 +55,8 @@ class OverstayedBookingOut(BaseModel):
 class BookingOut(BookingBase):
     booking_id: int
     booking_time: Optional[datetime]
-    customer_name: Optional[str] = None
     deleted: bool
+    all_names: Optional[List[str]] = []
 
     class Config:
         from_attributes = True

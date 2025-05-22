@@ -6,6 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from models import Booking, GroupMember, Customer, Payment
 from schemas.group_members import GroupMemberCreate
+from schemas.bookings import BookingOut
 from utils.get_customer_id_from_user import get_customer_id_from_user_id
 from crud.group_members import create_group_members
 from crud.payments import create_payment
@@ -167,7 +168,40 @@ def get_overstayed_bookings(db: Session, booking_date: date):
     return result
 
 def get_bookings_for_date(db: Session, booking_date: date):
-    return db.query(Booking).filter(Booking.booking_date == booking_date, Booking.deleted == False).all()
+    bookings = (
+        db.query(Booking)
+        .filter(Booking.booking_date == booking_date, Booking.deleted == False)
+        .all()
+    )
+
+    output = []
+    for booking in bookings:
+
+        payment = db.query(Payment.payment_amount).filter(Payment.booking_id == booking.booking_id).first()
+        booking.total_amount = float(payment[0])
+
+        # Get group members for that booking
+        group_members = (
+            db.query(GroupMember.full_name)
+            .filter(GroupMember.booking_id == booking.booking_id)
+            .all()
+        )
+
+        # Flatten group member names
+        member_names = [gm.full_name for gm in group_members]
+
+        all_names = member_names
+
+        # Convert booking to dict and add all_names
+        b_dict = booking.__dict__.copy()
+        b_dict["all_names"] = all_names
+
+        # Remove private fields if necessary
+        b_dict.pop("_sa_instance_state", None)
+
+        output.append(BookingOut(**b_dict))
+
+    return output
 
 def get_bookings_today_unpaid(db: Session, booking_date: date):
     results = (
