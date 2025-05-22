@@ -3,22 +3,21 @@ from sqlalchemy import func
 from models import Booking, GroupMember, Payment
 from datetime import date, timedelta
 
-def get_total_earnings_for_date(db: Session, target_date: date):
-    booking_total = db.query(func.sum(Booking.total_amount))\
-        .filter(Booking.booking_date == target_date, Booking.deleted == False)\
-        .scalar() or 0
-
-    rental_total = db.query(
-        func.sum(GroupMember.swimwear_cost + GroupMember.tube_cost +
-                 GroupMember.cap_cost + GroupMember.goggles_cost)
-    ).join(Booking).filter(Booking.booking_date == target_date, Booking.deleted == False)\
-     .scalar() or 0
+def get_total_earnings_for_date(db: Session, payment_date: date):
+    result = db.query(
+        func.coalesce(func.sum(Payment.swimming_amount), 0).label("swimming_revenue"),
+        func.coalesce(func.sum(Payment.rental_amount), 0).label("rental_revenue"),
+        func.coalesce(func.sum(Payment.payment_amount), 0).label("total_revenue")
+    ).filter(
+        func.date(Payment.payment_date) == payment_date,
+        Payment.payment_status == "completed",
+        Payment.is_deleted == False
+    ).one()
 
     return {
-        "date": target_date,
-        "booking_total": float(booking_total),
-        "rental_total": float(rental_total),
-        "total_earnings": float(booking_total + rental_total)
+        "swimming_revenue": float(result.swimming_revenue),
+        "rental_revenue": float(result.rental_revenue),
+        "total_revenue": float(result.total_revenue)
     }
 
 def get_summary(db):
