@@ -62,36 +62,30 @@ def get_all_bookings_of_customer(user_id: int, db, skip: int = 0, limit: int = 1
         GroupMember.customer_id == customer_id
     ).distinct().all()
     group_booking_ids = [row[0] for row in group_booking_ids]
-
-    own_booking_ids = db.query(Booking.booking_id).filter(
-        Booking.customer_id == customer_id
-    ).all()
-    own_booking_ids = [row[0] for row in own_booking_ids]
-
-    all_booking_ids = list(set(group_booking_ids + own_booking_ids))
+    all_booking_ids = list(set(group_booking_ids))
 
     # Step 3: Fetch bookings with pagination
+    now = datetime.now().date()
     bookings = db.query(Booking).filter(
-        Booking.booking_id.in_(all_booking_ids), Booking.deleted == False
+        Booking.booking_id.in_(all_booking_ids), 
+        Booking.deleted == False, 
+        Booking.booking_date >= now
     ).order_by(Booking.booking_date.desc()).offset(skip).limit(limit).all()
 
+    # Step 1: Preload payments for all bookings in one go (avoids N+1 problem)
+    booking_ids = [b.booking_id for b in bookings]
+    payments = db.query(Payment).filter(Payment.booking_id.in_(booking_ids)).all()
+    payment_map = {p.booking_id: p for p in payments}
+
+    # Step 2: Construct result with rental_total from payment table
     result = []
     for booking in bookings:
-        # Step 4: Get rental total for this booking from group_members
-        rental_total = db.query(
-            func.coalesce(func.sum(GroupMember.swimwear_cost), 0) +
-            func.coalesce(func.sum(GroupMember.tube_cost), 0) +
-            func.coalesce(func.sum(GroupMember.cap_cost), 0)+
-            func.coalesce(func.sum(GroupMember.goggles_cost), 0)
-        ).filter(GroupMember.booking_id == booking.booking_id).scalar()
-
-        # Step 5: Add rental_total to booking dictionary
         booking_dict = booking.__dict__.copy()
-        booking_dict["rental_total"] = rental_total
+        payment = payment_map.get(booking.booking_id)
+        booking_dict["rental_total"] = payment.rental_amount if payment else 0
 
         # Optionally, remove SQLAlchemy internal fields
         booking_dict.pop("_sa_instance_state", None)
-
         result.append(booking_dict)
 
     return result
